@@ -1,0 +1,168 @@
+version: "3.8"
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    # Optional: mount a volume to persist pulled models
+    # volumes:
+    #   - ollama-data:/root/.ollama
+    # No healthcheck: image may not have curl; script checks from host after compose up
+
+  embedding-service:
+    build:
+      context: .
+      dockerfile: embedding-service/Dockerfile
+    ports:
+      - "8081:8081"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8081/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api-gateway
+    ports:
+      - "8080:8080"
+      - "9000:9000"
+    environment:
+      QUARKUS_REST_CLIENT_PROMPT_SERVICE_URL: http://prompt-service:8080
+    depends_on:
+      prompt-service:
+        condition: service_healthy
+
+  prompt-service:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.prompt-service
+    ports:
+      - "8082:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/q/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 90s
+    environment:
+      EMBEDDING_SERVICE_URL: http://embedding-service:8081
+      LLM_OLLAMA_URL: http://ollama:11434
+      QUARKUS_GRPC_CLIENTS_VECTOR_HOST: vector-service
+      QUARKUS_GRPC_CLIENTS_VECTOR_PORT: "9002"
+      QUARKUS_GRPC_CLIENTS_SEARCH_HOST: search-service
+      QUARKUS_GRPC_CLIENTS_SEARCH_PORT: "9003"
+      QUARKUS_GRPC_CLIENTS_NOTIFICATION_HOST: notification-service
+      QUARKUS_GRPC_CLIENTS_NOTIFICATION_PORT: "9004"
+      QUARKUS_GRPC_CLIENTS_COLLABORATION_HOST: collaboration-service
+      QUARKUS_GRPC_CLIENTS_COLLABORATION_PORT: "9005"
+      QUARKUS_GRPC_CLIENTS_GRAPH_HOST: graph-service
+      QUARKUS_GRPC_CLIENTS_GRAPH_PORT: "9006"
+      QUARKUS_GRPC_CLIENTS_FEATURESTORE_HOST: feature-store-service
+      QUARKUS_GRPC_CLIENTS_FEATURESTORE_PORT: "9007"
+    # Start after backends are created; do not wait for healthy (JVM startup varies; orchestrator is resilient)
+    depends_on:
+      - vector-service
+      - search-service
+      - notification-service
+      - collaboration-service
+      - graph-service
+      - feature-store-service
+      - embedding-service
+      - ollama
+
+  vector-service:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.vector-service
+    ports:
+      - "9002:9002"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9002"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
+
+  search-service:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.search-service
+    ports:
+      - "9003:9003"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9003"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.notification-service
+    ports:
+      - "9004:9004"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9004"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
+
+  collaboration-service:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.collaboration-service
+    ports:
+      - "9005:9005"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9005"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
+
+  graph-service:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.graph-service
+    ports:
+      - "9006:9006"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9006"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
+
+  feature-store-service:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.feature-store-service
+    ports:
+      - "9007:9007"
+    environment:
+      QUARKUS_REDIS_HOSTS: redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9007"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 45s

@@ -1,0 +1,16 @@
+# Base image with Java 17 and Maven for building microservices
+FROM eclipse-temurin:17-jdk-alpine AS builder
+RUN apk add --no-cache maven
+WORKDIR /build
+# Pre-download dependencies (optional: copy pom first and run mvn dependency:go-offline)
+COPY pom.xml .
+RUN mvn -B dependency:go-offline -DskipTests || true
+COPY . .
+RUN mvn -B package -DskipTests -q
+
+FROM eclipse-temurin:17-jre-alpine
+RUN apk add --no-cache curl
+# Default: run nothing; child images copy app and use CMD to run java -jar
+WORKDIR /app
+EXPOSE 8080
+CMD ["echo", "Override CMD in service Dockerfile"]

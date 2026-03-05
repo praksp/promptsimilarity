@@ -1,0 +1,58 @@
+{
+  "name": "prompt-similarity-cursor",
+  "version": "1.0.0",
+  "description": "Cursor plugin: send prompts to local similarity service, get notifications when others do similar work",
+  "main": "dist/extension.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "package": "vsce package --no-dependencies"
+  },
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "configuration": {
+      "title": "Prompt Similarity",
+      "properties": {
+        "promptSimilarity.gatewayUrl": {
+          "type": "string",
+          "default": "http://localhost:8080",
+          "description": "Base URL of the prompt similarity API gateway"
+        },
+        "promptSimilarity.orgId": {
+          "type": "string",
+          "default": "default-org",
+          "description": "Organization ID for multi-tenant context"
+        },
+        "promptSimilarity.userId": {
+          "type": "string",
+          "default": "",
+          "description": "User ID (leave empty to use machine id)"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "promptSimilarity.ingestPrompt",
+        "title": "Send current selection to Prompt Similarity"
+      },
+      {
+        "command": "promptSimilarity.findSimilar",
+        "title": "Find similar prompts"
+      }
+    ]
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/vscode": "^1.80.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {}
+}

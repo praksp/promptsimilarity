@@ -1,0 +1,731 @@
+/* Layout */
+.app-container {
+  padding: 2rem;
+  max-width: 1120px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+.app-header {
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 1rem;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.6rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.app-header p {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+/* Main layout */
+.main-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: flex-start;
+  margin-top: 1.5rem;
+}
+
+.main-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+@media (max-width: 900px) {
+  .main-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Sections */
+.section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 0.75rem 0;
+}
+
+/* Prompt input */
+.prompt-input-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.prompt-input-hint {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 0 0 0.5rem 0;
+}
+
+.prompt-textarea {
+  width: 100%;
+  min-height: 120px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 0.75rem 1rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  resize: vertical;
+  transition: border-color 0.15s;
+}
+
+.prompt-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.prompt-textarea::placeholder {
+  color: var(--muted);
+}
+
+.prompt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.user-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.user-input {
+  width: 160px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.submit-btn {
+  padding: 0.6rem 1.25rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: var(--accent-dim);
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Context */
+.context-section {
+  margin-bottom: 1.5rem;
+}
+
+.context-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+}
+
+.context-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+}
+
+.context-id {
+  font-family: ui-monospace, monospace;
+}
+
+.context-text {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Similarity */
+.similarity-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.similarity-intro {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0 0 1rem 0;
+}
+
+.similarity-loading,
+.similarity-empty {
+  color: var(--muted);
+  font-size: 0.9rem;
+  padding: 1rem 0;
+}
+
+.similarity-hint {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.similarity-hint code {
+  font-size: 0.85em;
+  background: var(--bg);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
+
+/* Similarity graph (center + nodes) */
+.similarity-graph {
+  position: relative;
+  min-height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.similarity-graph-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.graph-center-node {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  z-index: 2;
+  box-shadow: 0 0 0 4px var(--surface);
+}
+
+.graph-label {
+  font-weight: 600;
+}
+
+.graph-outer-node-wrapper {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 1;
+}
+
+.graph-outer-node {
+  padding: 0.5rem 0.6rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  text-align: center;
+  min-width: 90px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.graph-score {
+  display: block;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+
+.graph-user {
+  display: block;
+  color: var(--text);
+}
+
+.graph-prompt-id {
+  display: block;
+  color: var(--muted);
+  font-size: 0.7rem;
+  margin-top: 0.2rem;
+}
+
+.graph-edge-line {
+  stroke: var(--border);
+  stroke-width: 1.5;
+}
+
+.graph-edge-label {
+  fill: var(--muted);
+  font-size: 0.7rem;
+}
+
+/* Similarity list */
+.similarity-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.similarity-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.similarity-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.similarity-user {
+  font-weight: 500;
+  color: var(--text);
+}
+
+.similarity-score {
+  font-size: 0.9rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.similarity-score-bar {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 0.35rem;
+}
+
+.similarity-score-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+.similarity-prompt-id {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-family: ui-monospace, monospace;
+}
+
+.similarity-notification-note {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin: 0 0 0.75rem 0;
+}
+
+.similarity-prompt-text {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 0.35rem;
+  line-height: 1.35;
+}
+
+.graph-prompt-preview {
+  font-size: 0.7rem;
+  color: var(--muted);
+  display: block;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Recent prompts (all in system) */
+.recent-prompts-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.recent-prompts-desc {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 0 0 0.75rem 0;
+}
+
+.recent-prompts-toggle {
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.recent-prompts-toggle input {
+  margin-right: 0.4rem;
+}
+
+.recent-prompts-loading,
+.recent-prompts-empty {
+  color: var(--muted);
+  font-size: 0.9rem;
+  padding: 0.5rem 0;
+}
+
+.recent-prompts-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.recent-prompt-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+}
+
+.recent-prompt-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.35rem;
+}
+
+.recent-prompt-user {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.recent-prompt-time {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.recent-prompt-text {
+  font-size: 0.9rem;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.recent-prompt-id {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-family: ui-monospace, monospace;
+  margin-top: 0.25rem;
+}
+
+/* Live similar suggestions */
+.live-similar-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.live-similar-desc {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 0 0 0.75rem 0;
+}
+
+.live-similar-empty {
+  color: var(--muted);
+  font-size: 0.9rem;
+  padding: 0.5rem 0;
+}
+
+.live-similar-list {
+  margin-top: 0.5rem;
+}
+
+/* Backend offline */
+.backend-offline {
+  background: var(--error-bg);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  color: var(--error);
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.backend-offline strong {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+/* Find similar panel */
+.find-similar-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.find-similar-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.find-similar-input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.find-similar-btn {
+  padding: 0.5rem 1rem;
+  background: var(--accent-dim);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.find-similar-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.message {
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.message.error {
+  color: var(--error);
+}
+
+.message.success {
+  color: var(--success);
+}
+
+/* RAG panel */
+.rag-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow);
+}
+
+.rag-desc {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 0 0 1rem 0;
+}
+
+.rag-input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.rag-textarea {
+  width: 100%;
+  min-height: 80px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 0.75rem 1rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  resize: vertical;
+  transition: border-color 0.15s;
+}
+
+.rag-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.rag-ask-btn {
+  align-self: flex-start;
+}
+
+.rag-response-card {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.rag-response-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.rag-badge {
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.rag-badge-cache {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.rag-badge-new {
+  background: #e0f2fe;
+  color: var(--accent-dim);
+}
+
+.rag-tokens,
+.rag-similarity {
+  color: var(--muted);
+}
+
+.rag-response-text {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.rag-feedback {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.rag-feedback-label {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+
+.rag-feedback-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.rag-feedback-btn {
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.rag-feedback-btn:hover {
+  background: var(--bg);
+}
+
+.rag-feedback-yes {
+  background: var(--success-bg);
+  color: var(--success);
+  border-color: var(--success);
+}
+
+.rag-feedback-yes:hover {
+  filter: brightness(0.97);
+}
+
+.rag-feedback-no {
+  color: var(--muted);
+}
+
+.rag-feedback-sent {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+/* RAG stats */
+.rag-stats {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow);
+}
+
+.rag-stats-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.75rem;
+}
+
+.rag-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 1rem;
+}
+
+.rag-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.rag-stat-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.rag-stat-label {
+  font-size: 0.8rem;
+  color: var(--muted);
+}

@@ -1,0 +1,40 @@
+# Build outputs
+target/
+node_modules/
+dist/
+*.jar
+!**/src/main/resources/**/*.jar
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# Env / secrets
+.env
+.env.local
+*.pem
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Quarkus
+.quarkus/
+
+# Dashboard
+dashboard/dist/

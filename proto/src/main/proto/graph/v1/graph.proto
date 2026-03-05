@@ -1,0 +1,84 @@
+syntax = "proto3";
+
+package graph.v1;
+
+option java_multiple_files = true;
+option java_package = "com.promptsimilarity.proto.graph.v1";
+option java_outer_classname = "GraphProto";
+
+service GraphService {
+  rpc RecordPrompt(RecordPromptRequest) returns (RecordPromptResponse);
+  rpc RecordSimilarity(RecordSimilarityRequest) returns (RecordSimilarityResponse);
+  rpc RecordResponse(RecordResponseRequest) returns (RecordResponseResponse);
+  rpc RecordChat(RecordChatRequest) returns (RecordChatResponse);
+  rpc GetKnowledgeGraph(GetKnowledgeGraphRequest) returns (GetKnowledgeGraphResponse);
+}
+
+message RecordPromptRequest {
+  string prompt_id = 1;
+  string user_id = 2;
+  string org_id = 3;
+  int64 created_at = 4;
+}
+
+message RecordPromptResponse {
+  bool success = 1;
+}
+
+message RecordSimilarityRequest {
+  string prompt_id_1 = 1;
+  string prompt_id_2 = 2;
+  double score = 3;
+}
+
+message RecordSimilarityResponse {
+  bool success = 1;
+}
+
+message RecordResponseRequest {
+  string prompt_id = 1;
+  string response_id = 2;
+  string user_id = 3;
+  string org_id = 4;
+  int64 tokens_used = 5;
+  int64 created_at = 6;
+}
+
+message RecordResponseResponse {
+  bool success = 1;
+}
+
+message RecordChatRequest {
+  string chat_id = 1;
+  string room_id = 2;
+  string prompt_id = 3;
+  string user_id = 4;
+  int64 created_at = 5;
+}
+
+message RecordChatResponse {
+  bool success = 1;
+}
+
+message GetKnowledgeGraphRequest {
+  string org_id = 1;
+  optional int32 max_nodes = 2;
+}
+
+message GetKnowledgeGraphResponse {
+  repeated GraphNode nodes = 1;
+  repeated GraphEdge edges = 2;
+}
+
+message GraphNode {
+  string id = 1;
+  string type = 2; // USER, PROMPT, RESPONSE, TOPIC, CHAT, ROOM
+  map<string, string> properties = 3;
+}
+
+message GraphEdge {
+  string source_id = 1;
+  string target_id = 2;
+  string type = 3; // AUTHORED, SIMILAR_TO, GENERATED, REFERENCES, PARTICIPATES
+  map<string, string> properties = 4;
+}

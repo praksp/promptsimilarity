@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package notification.v1;
+
+option java_multiple_files = true;
+option java_package = "com.promptsimilarity.proto.notification.v1";
+option java_outer_classname = "NotificationProto";
+
+service NotificationService {
+  rpc SendSimilarityAlert(SendSimilarityAlertRequest) returns (SendSimilarityAlertResponse);
+  rpc NotifyNewRoom(NotifyNewRoomRequest) returns (NotifyNewRoomResponse);
+}
+
+message SendSimilarityAlertRequest {
+  string user_id = 1;
+  string org_id = 2;
+  string prompt_id = 3;
+  repeated SimilarityNotificationTarget targets = 4;
+  double similarity_score = 5;
+}
+
+message SimilarityNotificationTarget {
+  string user_id = 1;
+  string prompt_id = 2;
+  double score = 3;
+}
+
+message SendSimilarityAlertResponse {
+  bool success = 1;
+}
+
+message NotifyNewRoomRequest {
+  string room_id = 1;
+  string org_id = 2;
+  repeated string user_ids = 3;
+  string room_type = 4; // TEAMS | SLACK
+  string external_room_id = 5;
+}
+
+message NotifyNewRoomResponse {
+  bool success = 1;
+}

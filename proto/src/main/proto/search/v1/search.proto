@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package search.v1;
+
+option java_multiple_files = true;
+option java_package = "com.promptsimilarity.proto.search.v1";
+option java_outer_classname = "SearchProto";
+
+service SearchService {
+  rpc IndexPrompt(IndexPromptRequest) returns (IndexPromptResponse);
+  rpc KeywordSearch(KeywordSearchRequest) returns (KeywordSearchResponse);
+  rpc HybridSearch(HybridSearchRequest) returns (HybridSearchResponse);
+}
+
+message IndexPromptRequest {
+  string prompt_id = 1;
+  string user_id = 2;
+  string org_id = 3;
+  string text = 4;
+  int64 created_at = 5;
+  string language = 6;
+}
+
+message IndexPromptResponse {
+  bool success = 1;
+}
+
+message KeywordSearchRequest {
+  string query = 1;
+  string org_id = 2;
+  optional string user_id = 3;
+  int32 from = 4;
+  int32 size = 5;
+}
+
+message KeywordSearchResponse {
+  repeated SearchHit hits = 1;
+  int64 total = 2;
+}
+
+message SearchHit {
+  string prompt_id = 1;
+  string user_id = 2;
+  double score = 3;
+  string text_preview = 4;
+  int64 created_at = 5;
+}
+
+message HybridSearchRequest {
+  string query = 1;
+  repeated float embedding = 2;
+  string org_id = 3;
+  int32 size = 4;
+  double vector_weight = 5;
+}
+
+message HybridSearchResponse {
+  repeated SearchHit hits = 1;
+  int64 total = 2;
+}

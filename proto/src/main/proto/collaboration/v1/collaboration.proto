@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package collaboration.v1;
+
+option java_multiple_files = true;
+option java_package = "com.promptsimilarity.proto.collaboration.v1";
+option java_outer_classname = "CollaborationProto";
+
+service CollaborationService {
+  rpc CreateRoomFromSimilarity(CreateRoomFromSimilarityRequest) returns (CreateRoomFromSimilarityResponse);
+  rpc LinkChatToPrompt(LinkChatToPromptRequest) returns (LinkChatToPromptResponse);
+  rpc GetRoom(GetRoomRequest) returns (GetRoomResponse);
+}
+
+message CreateRoomFromSimilarityRequest {
+  string org_id = 1;
+  repeated string user_ids = 2;
+  repeated string prompt_ids = 3;
+  string room_type = 4; // TEAMS | SLACK
+}
+
+message CreateRoomFromSimilarityResponse {
+  string room_id = 1;
+  string external_room_id = 2;
+  string room_type = 3;
+  bool success = 4;
+}
+
+message LinkChatToPromptRequest {
+  string chat_id = 1;
+  string room_id = 2;
+  string prompt_id = 3;
+  string user_id = 4;
+}
+
+message LinkChatToPromptResponse {
+  bool success = 1;
+}
+
+message GetRoomRequest {
+  string room_id = 1;
+}
+
+message GetRoomResponse {
+  string room_id = 1;
+  string external_room_id = 2;
+  repeated string participant_ids = 3;
+  repeated string prompt_ids = 4;
+}

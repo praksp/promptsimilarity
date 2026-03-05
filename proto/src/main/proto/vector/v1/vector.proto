@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package vector.v1;
+
+option java_multiple_files = true;
+option java_package = "com.promptsimilarity.proto.vector.v1";
+option java_outer_classname = "VectorProto";
+
+service VectorService {
+  rpc StorePrompt(StorePromptRequest) returns (StorePromptResponse);
+  rpc StoreReasoning(StoreReasoningRequest) returns (StoreReasoningResponse);
+  rpc SearchSimilar(SearchSimilarRequest) returns (SearchSimilarResponse);
+}
+
+message StorePromptRequest {
+  string prompt_id = 1;
+  string user_id = 2;
+  string org_id = 3;
+  repeated float embedding = 4;
+  map<string, string> metadata = 5;
+}
+
+message StorePromptResponse {
+  bool success = 1;
+}
+
+message StoreReasoningRequest {
+  string reasoning_id = 1;
+  string prompt_id = 2;
+  string user_id = 3;
+  string org_id = 4;
+  repeated float embedding = 5;
+  map<string, string> metadata = 6;
+}
+
+message StoreReasoningResponse {
+  bool success = 1;
+}
+
+message SearchSimilarRequest {
+  repeated float embedding = 1;
+  string org_id = 2;
+  optional string exclude_user_id = 3;
+  int32 top_k = 4;
+  double min_score = 5;
+}
+
+message SearchSimilarResponse {
+  repeated VectorMatch results = 1;
+}
+
+message VectorMatch {
+  string id = 1;
+  double score = 2;
+  map<string, string> metadata = 3;
+}

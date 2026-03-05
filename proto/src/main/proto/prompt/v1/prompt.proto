@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package prompt.v1;
+
+option java_multiple_files = true;
+option java_package = "com.promptsimilarity.proto.prompt.v1";
+option java_outer_classname = "PromptProto";
+
+service PromptService {
+  rpc IngestPrompt(IngestPromptRequest) returns (IngestPromptResponse);
+  rpc FindSimilarPrompts(FindSimilarPromptsRequest) returns (FindSimilarPromptsResponse);
+  rpc GetPrompt(GetPromptRequest) returns (GetPromptResponse);
+}
+
+message IngestPromptRequest {
+  string user_id = 1;
+  string org_id = 2;
+  string text = 3;
+  string language = 4;
+  optional string context_id = 5;
+}
+
+message IngestPromptResponse {
+  string prompt_id = 1;
+  bool similarity_detected = 2;
+  repeated SimilarUser similar_users = 3;
+}
+
+message SimilarUser {
+  string user_id = 1;
+  string prompt_id = 2;
+  double similarity_score = 3;
+}
+
+message FindSimilarPromptsRequest {
+  string text = 1;
+  string org_id = 2;
+  string user_id = 3;
+  int32 top_k = 4;
+  double min_score = 5;
+}
+
+message FindSimilarPromptsResponse {
+  repeated SimilarPromptResult results = 1;
+}
+
+message SimilarPromptResult {
+  string prompt_id = 1;
+  string user_id = 2;
+  double score = 3;
+  string text_preview = 4;
+}
+
+message GetPromptRequest {
+  string prompt_id = 1;
+}
+
+message GetPromptResponse {
+  string prompt_id = 1;
+  string user_id = 2;
+  string org_id = 3;
+  string text = 4;
+  int64 created_at = 5;
+}
