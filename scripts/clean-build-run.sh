@@ -2,19 +2,22 @@
 # Build and run the Prompt Similarity app end-to-end.
 # Without --force: incremental build (only rebuild what's needed, Docker cache used).
 # With --force: full clean, rebuild all services, no Docker cache.
-# Ensures Docker and Ollama-related services are up.
+# With --test: after startup, run a smoke test (ingest, similar-responses, ask-llm).
 set -e
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 FORCE=false
+RUN_TEST=false
 for arg in "$@"; do
   case "$arg" in
     --force|-f) FORCE=true ;;
+    --test|-t)  RUN_TEST=true ;;
     --help|-h)
-      echo "Usage: $0 [--force|--help]"
+      echo "Usage: $0 [--force] [--test] [--help]"
       echo "  --force, -f   Clean all build artifacts and rebuild everything (no cache)."
-      echo "  (default)     Incremental build: only rebuild changed modules, use Docker cache."
+      echo "  --test, -t   After startup, run smoke test (ingest, RAG, ask-llm)."
+      echo "  (default)    Incremental build, use Docker cache."
       exit 0
       ;;
   esac
@@ -117,22 +120,85 @@ if docker info &>/dev/null; then
   echo "  docker compose logs -f ollama       # Ollama logs"
   echo ""
 
-  # Wait for Ollama to be reachable (best-effort)
+  # Wait for Ollama to be reachable (required for LLM; prompt-service uses http://ollama:11434)
   if command -v curl &>/dev/null; then
-    echo -n "Checking Ollama (RAG/LLM)... "
+    echo -n "Waiting for Ollama (RAG/LLM at :11434)... "
     n=0
-    while [ $n -lt 30 ]; do
-      if curl -s -o /dev/null -w "%{http_code}" http://localhost:11434/api/version 2>/dev/null | grep -q 200; then
+    while [ $n -lt 45 ]; do
+      if curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 http://localhost:11434/api/version 2>/dev/null | grep -q 200; then
         echo "up."
         break
       fi
       n=$((n + 1))
       if [ $n -eq 1 ]; then echo ""; fi
-      echo "  waiting for Ollama ($n/30)..."
+      echo "  waiting for Ollama ($n/45)..."
       sleep 2
     done
-    if [ $n -ge 30 ]; then
-      echo "  Ollama not responding yet. RAG will use stub until Ollama is ready. Pull a model: ollama pull llama2"
+    if [ $n -ge 45 ]; then
+      echo "  Ollama not responding after 90s. Pull a model in the container: docker compose exec ollama ollama pull llama2"
+    fi
+  fi
+
+  # Smoke test (--test)
+  if [ "$RUN_TEST" = true ] && command -v curl &>/dev/null; then
+    echo ""
+    echo "=== Smoke test (--test) ==="
+    GATEWAY="http://localhost:8080"
+    FAIL=0
+    wait_for_url() {
+      local url=$1
+      local name=$2
+      local max=${3:-30}
+      local i=0
+      while [ $i -lt "$max" ]; do
+        if curl -s -o /dev/null -w "%{http_code}" "$url" 2>/dev/null | grep -q 200; then
+          echo "  OK $name"
+          return 0
+        fi
+        i=$((i + 1))
+        sleep 2
+      done
+      echo "  FAIL $name (timeout)"
+      return 1
+    }
+    if ! wait_for_url "$GATEWAY/q/health" "Gateway health" 20; then FAIL=1; fi
+    if [ $FAIL -eq 0 ]; then
+      INGEST=$(curl -s -X POST "$GATEWAY/api/v1/prompts/ingest" \
+        -H "Content-Type: application/json" \
+        -d '{"userId":"smoke-user","orgId":"default-org","text":"smoke test prompt","language":"en"}' \
+        -w "\n%{http_code}" 2>/dev/null)
+      if echo "$INGEST" | tail -1 | grep -q 200; then
+        echo "  OK POST /api/v1/prompts/ingest"
+      else
+        echo "  FAIL POST /api/v1/prompts/ingest (expected 200)"
+        FAIL=1
+      fi
+      RAG=$(curl -s -X POST "$GATEWAY/api/v1/prompts/rag/similar-responses" \
+        -H "Content-Type: application/json" \
+        -d '{"prompt":"smoke test","userId":"smoke-user","orgId":"default-org"}' \
+        -w "\n%{http_code}" 2>/dev/null)
+      if echo "$RAG" | tail -1 | grep -q 200; then
+        echo "  OK POST /api/v1/prompts/rag/similar-responses"
+      else
+        echo "  FAIL POST /api/v1/prompts/rag/similar-responses"
+        FAIL=1
+      fi
+      ASK_LLM=$(curl -s -X POST "$GATEWAY/api/v1/prompts/rag/ask-llm" \
+        -H "Content-Type: application/json" \
+        -d '{"prompt":"Hi","userId":"smoke-user","orgId":"default-org"}' \
+        -w "\n%{http_code}" --max-time 120 2>/dev/null)
+      if echo "$ASK_LLM" | tail -1 | grep -q 200; then
+        echo "  OK POST /api/v1/prompts/rag/ask-llm"
+      else
+        echo "  FAIL POST /api/v1/prompts/rag/ask-llm (timeout or non-200)"
+        FAIL=1
+      fi
+    fi
+    if [ $FAIL -eq 0 ]; then
+      echo "  Smoke test passed."
+    else
+      echo "  Smoke test had failures."
+      exit 1
     fi
   fi
 else

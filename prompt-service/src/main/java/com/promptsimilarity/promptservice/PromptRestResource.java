@@ -146,6 +146,57 @@ public class PromptRestResource {
         return new RagStatsDto(s.tokensSavedTotal(), s.tokensSavedThisMonth(), s.tokensSavedOrg(), s.reuseCount());
     }
 
+    @POST
+    @Path("/rag/similar-responses")
+    public Uni<List<SimilarResponseMatchDto>> ragSimilarResponses(RagSimilarResponsesRequestDto dto) {
+        String prompt = dto.prompt != null ? dto.prompt.trim() : "";
+        String userId = dto.userId != null ? dto.userId : "";
+        String orgId = dto.orgId != null ? dto.orgId : "default-org";
+        return ragOrchestrator.similarResponses(prompt, userId, orgId)
+                .map(list -> list.stream()
+                        .map(m -> new SimilarResponseMatchDto(m.promptId(), m.responseId(), m.promptPreview(), m.responseText(), m.similarityScore(), m.tokensUsed()))
+                        .toList())
+                .onFailure().recoverWithItem(() -> List.of());
+    }
+
+    @POST
+    @Path("/rag/ask-llm")
+    public Uni<RagAskResponseDto> ragAskLlm(RagAskLlmRequestDto dto) {
+        String prompt = dto.prompt != null ? dto.prompt.trim() : "";
+        String userId = dto.userId != null ? dto.userId : "";
+        String orgId = dto.orgId != null ? dto.orgId : "default-org";
+        List<RagOrchestrator.SimilarMatch> similarMatches = null;
+        if (dto.similarMatches != null && !dto.similarMatches.isEmpty()) {
+            similarMatches = dto.similarMatches.stream()
+                    .map(sm -> new RagOrchestrator.SimilarMatch(sm.promptId, sm.score))
+                    .toList();
+        }
+        return ragOrchestrator.askLlm(prompt, userId, orgId, similarMatches)
+                .map(r -> new RagAskResponseDto(
+                        r.responseText(),
+                        r.responseId(),
+                        r.promptId(),
+                        r.tokensUsed(),
+                        r.similarityScore(),
+                        false,
+                        true))
+                .onFailure().recoverWithItem(e -> new RagAskResponseDto(
+                        "Request failed: " + (e != null && e.getMessage() != null ? e.getMessage() : (e != null ? e.getClass().getSimpleName() : "Unknown")),
+                        null, null, 0, 0, false, false));
+    }
+
+    @POST
+    @Path("/rag/record-satisfied")
+    public Uni<RagRecordSatisfiedResponseDto> ragRecordSatisfied(RagRecordSatisfiedRequestDto dto) {
+        String promptText = dto.promptText != null ? dto.promptText.trim() : "";
+        String userId = dto.userId != null ? dto.userId : "";
+        String orgId = dto.orgId != null ? dto.orgId : "default-org";
+        String similarToPromptId = dto.similarToPromptId != null ? dto.similarToPromptId : "";
+        double score = dto.similarityScore >= 0 ? dto.similarityScore : 0;
+        return ragOrchestrator.recordPromptAndSimilarity(promptText, userId, orgId, similarToPromptId, score)
+                .map(promptId -> new RagRecordSatisfiedResponseDto(promptId != null ? promptId : ""));
+    }
+
     public static final class RagAskRequestDto {
         public String prompt;
         public String userId;
@@ -194,6 +245,62 @@ public class PromptRestResource {
             this.tokensSavedThisMonth = tokensSavedThisMonth;
             this.tokensSavedOrg = tokensSavedOrg;
             this.reuseCount = reuseCount;
+        }
+    }
+
+    public static final class RagSimilarResponsesRequestDto {
+        public String prompt;
+        public String userId;
+        public String orgId;
+    }
+
+    public static final class SimilarResponseMatchDto {
+        public String promptId;
+        public String responseId;
+        public String promptPreview;
+        public String responseText;
+        public double similarityScore;
+        public long tokensUsed;
+
+        public SimilarResponseMatchDto() {}
+
+        public SimilarResponseMatchDto(String promptId, String responseId, String promptPreview, String responseText, double similarityScore, long tokensUsed) {
+            this.promptId = promptId;
+            this.responseId = responseId;
+            this.promptPreview = promptPreview;
+            this.responseText = responseText;
+            this.similarityScore = similarityScore;
+            this.tokensUsed = tokensUsed;
+        }
+    }
+
+    public static final class RagAskLlmRequestDto {
+        public String prompt;
+        public String userId;
+        public String orgId;
+        public List<SimilarMatchDto> similarMatches;
+    }
+
+    public static final class SimilarMatchDto {
+        public String promptId;
+        public double score;
+    }
+
+    public static final class RagRecordSatisfiedRequestDto {
+        public String promptText;
+        public String userId;
+        public String orgId;
+        public String similarToPromptId;
+        public double similarityScore;
+    }
+
+    public static final class RagRecordSatisfiedResponseDto {
+        public String promptId;
+
+        public RagRecordSatisfiedResponseDto() {}
+
+        public RagRecordSatisfiedResponseDto(String promptId) {
+            this.promptId = promptId;
         }
     }
 

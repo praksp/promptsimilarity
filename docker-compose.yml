@@ -15,10 +15,7 @@ services:
     image: ollama/ollama:latest
     ports:
       - "11434:11434"
-    # Optional: mount a volume to persist pulled models
-    # volumes:
-    #   - ollama-data:/root/.ollama
-    # No healthcheck: image may not have curl; script checks from host after compose up
+    # Optional: volumes to persist models. Image has no curl; script waits for :11434 from host.
 
   embedding-service:
     build:
@@ -61,6 +58,7 @@ services:
     environment:
       EMBEDDING_SERVICE_URL: http://embedding-service:8081
       LLM_OLLAMA_URL: http://ollama:11434
+      QUARKUS_REDIS_HOSTS: redis://redis:6379
       QUARKUS_GRPC_CLIENTS_VECTOR_HOST: vector-service
       QUARKUS_GRPC_CLIENTS_VECTOR_PORT: "9002"
       QUARKUS_GRPC_CLIENTS_SEARCH_HOST: search-service
@@ -75,14 +73,16 @@ services:
       QUARKUS_GRPC_CLIENTS_FEATURESTORE_PORT: "9007"
     # Start after backends are created; do not wait for healthy (JVM startup varies; orchestrator is resilient)
     depends_on:
-      - vector-service
-      - search-service
-      - notification-service
-      - collaboration-service
-      - graph-service
-      - feature-store-service
-      - embedding-service
-      - ollama
+      redis:
+        condition: service_healthy
+      vector-service: {}
+      search-service: {}
+      notification-service: {}
+      collaboration-service: {}
+      graph-service: {}
+      feature-store-service: {}
+      embedding-service: {}
+      ollama: {}
 
   vector-service:
     build:

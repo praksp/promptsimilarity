@@ -11,6 +11,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -136,6 +137,84 @@ public class RagOrchestrator {
     }
 
     /**
+     * Find similar prompts that already have LLM responses. Used to suggest existing answers before calling the LLM.
+     */
+    public Uni<List<SimilarResponseMatch>> similarResponses(String prompt, String userId, String orgId) {
+        if (prompt == null || prompt.isBlank()) {
+            return Uni.createFrom().item(List.of());
+        }
+        String safeOrg = orgId != null ? orgId : "default-org";
+        return embeddingClient.embed(prompt)
+                .flatMap(embedding -> vectorClient.searchSimilar(
+                                embedding, safeOrg, null, 10, ragSimilarityThreshold)
+                        .onFailure().recoverWithItem(() -> List.of()))
+                .map(matches -> {
+                    List<SimilarResponseMatch> out = new ArrayList<>();
+                    for (VectorServiceClient.VectorMatch m : matches) {
+                        StoredResponse stored = responseStore.getByPromptId(m.getPromptId());
+                        if (stored != null) {
+                            out.add(new SimilarResponseMatch(
+                                    m.getPromptId(),
+                                    stored.responseId(),
+                                    m.getTextPreview() != null ? m.getTextPreview() : "",
+                                    stored.text(),
+                                    m.score(),
+                                    stored.tokensUsed()));
+                        }
+                    }
+                    return out;
+                });
+    }
+
+    /**
+     * Call LLM and store response; optionally record similarity to previously found prompts.
+     */
+    public Uni<RagAskResult> askLlm(String prompt, String userId, String orgId, List<SimilarMatch> similarMatches) {
+        if (prompt == null || prompt.isBlank()) {
+            return Uni.createFrom().item(new RagAskResult("", null, null, 0, 0, false, false));
+        }
+        String safeUser = userId != null ? userId : "";
+        String safeOrg = orgId != null ? orgId : "default-org";
+        return embeddingClient.embed(prompt)
+                .flatMap(embedding -> callLlmAndStore(prompt, safeUser, safeOrg, embedding)
+                        .flatMap(result -> {
+                            if ((similarMatches == null || similarMatches.isEmpty()) || result.promptId() == null) {
+                                return Uni.createFrom().item(result);
+                            }
+                            List<Uni<Void>> unis = similarMatches.stream()
+                                    .map(sm -> graphClient.recordSimilarity(result.promptId(), sm.promptId(), sm.score()).onFailure().recoverWithItem(() -> null))
+                                    .toList();
+                            return Uni.combine().all().unis(unis).discardItems().replaceWith(result);
+                        }));
+    }
+
+    /**
+     * Record prompt in vector+graph and link it as similar to an existing prompt (when user chose "Use this answer").
+     */
+    public Uni<String> recordPromptAndSimilarity(String promptText, String userId, String orgId, String similarToPromptId, double similarityScore) {
+        if (promptText == null || promptText.isBlank()) {
+            return Uni.createFrom().item(null);
+        }
+        String promptId = UUID.randomUUID().toString();
+        String safeUser = userId != null ? userId : "";
+        String safeOrg = orgId != null ? orgId : "default-org";
+        IngestPromptRequest req = IngestPromptRequest.newBuilder()
+                .setUserId(safeUser)
+                .setOrgId(safeOrg)
+                .setText(promptText)
+                .setLanguage("en")
+                .build();
+        promptRepository.save(promptId, req);
+        return embeddingClient.embed(promptText)
+                .flatMap(embedding -> {
+                    Uni<Void> storePrompt = vectorClient.storePrompt(promptId, req, embedding).onFailure().recoverWithItem(() -> null);
+                    Uni<Void> graphPrompt = graphClient.recordPrompt(promptId, req).onFailure().recoverWithItem(() -> null);
+                    Uni<Void> graphSimilar = graphClient.recordSimilarity(promptId, similarToPromptId, similarityScore).onFailure().recoverWithItem(() -> null);
+                    return Uni.combine().all().unis(storePrompt, graphPrompt, graphSimilar).discardItems().replaceWith(promptId);
+                });
+    }
+
+    /**
      * When user indicates satisfaction with a cached response, record tokens saved.
      */
     public Uni<Void> feedback(String responseId, boolean satisfied, String orgId) {
@@ -172,4 +251,10 @@ public class RagOrchestrator {
     ) {}
 
     public record RagStats(long tokensSavedTotal, long tokensSavedThisMonth, long tokensSavedOrg, long reuseCount) {}
+
+    /** One similar prompt that has a stored LLM response (for UI to show and let user choose). */
+    public record SimilarResponseMatch(String promptId, String responseId, String promptPreview, String responseText, double similarityScore, long tokensUsed) {}
+
+    /** Prompt id + score for recording similarity after a new LLM response. */
+    public record SimilarMatch(String promptId, double score) {}
 }

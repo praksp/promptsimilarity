@@ -81,6 +81,24 @@ public class PromptGatewayResource {
         return promptClient.ragStats(orgId);
     }
 
+    @POST
+    @Path("/rag/similar-responses")
+    public Uni<List<SimilarResponseMatchDto>> ragSimilarResponses(RagSimilarResponsesRequestDto dto) {
+        return promptClient.ragSimilarResponses(dto).onFailure().recoverWithItem(() -> List.of());
+    }
+
+    @POST
+    @Path("/rag/ask-llm")
+    public Uni<RagAskResponseDto> ragAskLlm(RagAskLlmRequestDto dto) {
+        return promptClient.ragAskLlm(dto);
+    }
+
+    @POST
+    @Path("/rag/record-satisfied")
+    public Uni<RagRecordSatisfiedResponseDto> ragRecordSatisfied(RagRecordSatisfiedRequestDto dto) {
+        return promptClient.ragRecordSatisfied(dto);
+    }
+
     public record IngestRequestDto(String userId, String orgId, String text, String language) {}
     public record IngestResponseDto(String promptId, boolean similarityDetected, List<SimilarUserDto> similarUsers) {}
     public record SimilarUserDto(String userId, String promptId, double similarityScore, String textPreview) {}
@@ -92,4 +110,11 @@ public class PromptGatewayResource {
                                     double similarityScore, boolean fromCache, boolean askSatisfaction) {}
     public record RagFeedbackRequestDto(String responseId, boolean satisfied, String orgId) {}
     public record RagStatsDto(long tokensSavedTotal, long tokensSavedThisMonth, long tokensSavedOrg, long reuseCount) {}
+
+    public record RagSimilarResponsesRequestDto(String prompt, String userId, String orgId) {}
+    public record SimilarResponseMatchDto(String promptId, String responseId, String promptPreview, String responseText, double similarityScore, long tokensUsed) {}
+    public record RagAskLlmRequestDto(String prompt, String userId, String orgId, List<SimilarMatchDto> similarMatches) {}
+    public record SimilarMatchDto(String promptId, double score) {}
+    public record RagRecordSatisfiedRequestDto(String promptText, String userId, String orgId, String similarToPromptId, double similarityScore) {}
+    public record RagRecordSatisfiedResponseDto(String promptId) {}
 }

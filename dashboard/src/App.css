@@ -698,6 +698,133 @@
   box-shadow: var(--shadow);
 }
 
+/* Unified prompt flow (one input → similar first → use or get from LLM) */
+.unified-prompt-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow);
+}
+
+.unified-prompt-hint {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 0 0 1rem 0;
+}
+
+.unified-prompt-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.unified-textarea {
+  min-height: 100px;
+}
+
+.unified-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.unified-result {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.unified-result-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 0.35rem 0;
+}
+
+.unified-result-desc {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 0 0 1rem 0;
+}
+
+.unified-similar-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.unified-similar-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.unified-similar-prompt {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+
+.unified-similar-response {
+  font-size: 0.9rem;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+  white-space: pre-wrap;
+}
+
+.unified-similar-meta {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+}
+
+.unified-llm-row {
+  margin-top: 1rem;
+}
+
+.unified-llm-btn {
+  background: var(--accent-dim);
+}
+
+.unified-no-similar {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 0 0 0.5rem 0;
+}
+
+.unified-llm-response {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.advanced-mode-row {
+  margin-bottom: 1rem;
+}
+
+.advanced-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.advanced-mode-toggle input {
+  width: 1rem;
+  height: 1rem;
+}
+
 .rag-stats-title {
   font-size: 0.85rem;
   font-weight: 600;

@@ -57,6 +57,19 @@ public class OllamaLlmClient implements LlmProvider {
                 .timeout(Duration.ofSeconds(120))
                 .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
                 .build();
+        return doRequest(request, fullPrompt)
+                .onFailure().retry().withBackOff(Duration.ofSeconds(2)).atMost(3)
+                .onFailure().recoverWithItem(e -> {
+                    String msg = e != null && e.getMessage() != null ? e.getMessage() : (e != null ? e.getClass().getSimpleName() : "Unknown error");
+                    boolean isConnection = msg.contains("Connection") || msg.contains("refused") || msg.contains("timed out") || msg.contains("UnknownHost") || msg.contains("Connection refused");
+                    String text = isConnection
+                            ? "LLM is currently unavailable (Ollama not reachable at " + ollamaUrl + "). Ensure the Ollama container is running (e.g. docker compose ps) and has pulled a model (docker compose exec ollama ollama pull " + model + ")."
+                            : "LLM request failed: " + msg;
+                    return new LlmResult(text, estimateTokens(fullPrompt), 0);
+                });
+    }
+
+    private Uni<LlmResult> doRequest(HttpRequest request, String fullPrompt) {
         CompletableFuture<HttpResponse<String>> future = httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString());
         return Uni.createFrom().completionStage(future)
                 .onItem().transform(resp -> {
@@ -76,14 +89,6 @@ public class OllamaLlmClient implements LlmProvider {
                         return new LlmResult(hint, estimateTokens(fullPrompt), 0);
                     }
                     throw new RuntimeException("Ollama returned " + resp.statusCode() + ": " + responseBody);
-                })
-                .onFailure().recoverWithItem(e -> {
-                    String msg = e != null && e.getMessage() != null ? e.getMessage() : (e != null ? e.getClass().getSimpleName() : "Unknown error");
-                    boolean isConnection = msg.contains("Connection") || msg.contains("refused") || msg.contains("timed out") || msg.contains("UnknownHost");
-                    String text = isConnection
-                            ? "LLM is currently unavailable (Ollama not reachable at " + ollamaUrl + "). Start Ollama or set llm.ollama.url to your endpoint."
-                            : "LLM request failed: " + msg;
-                    return new LlmResult(text, estimateTokens(fullPrompt), 0);
                 });
     }
 

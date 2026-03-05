@@ -53,4 +53,16 @@ public interface PromptServiceRestClient {
     @GET
     @Path("/internal/prompts/rag/stats")
     PromptGatewayResource.RagStatsDto ragStats(@QueryParam("orgId") String orgId);
+
+    @POST
+    @Path("/internal/prompts/rag/similar-responses")
+    Uni<List<PromptGatewayResource.SimilarResponseMatchDto>> ragSimilarResponses(PromptGatewayResource.RagSimilarResponsesRequestDto dto);
+
+    @POST
+    @Path("/internal/prompts/rag/ask-llm")
+    Uni<PromptGatewayResource.RagAskResponseDto> ragAskLlm(PromptGatewayResource.RagAskLlmRequestDto dto);
+
+    @POST
+    @Path("/internal/prompts/rag/record-satisfied")
+    Uni<PromptGatewayResource.RagRecordSatisfiedResponseDto> ragRecordSatisfied(PromptGatewayResource.RagRecordSatisfiedRequestDto dto);
 }
