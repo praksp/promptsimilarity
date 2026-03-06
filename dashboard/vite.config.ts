@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 3000,
+    open: true, // Open browser when running npm run dev
     // Proxy to API gateway. ECONNREFUSED here means the backend is not running — start it with: docker compose up -d (or run the gateway on :8080).
     proxy: {
       '/api': { target: 'http://localhost:8080', changeOrigin: true },

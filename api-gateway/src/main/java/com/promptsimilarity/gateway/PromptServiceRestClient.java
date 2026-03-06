@@ -65,4 +65,8 @@ public interface PromptServiceRestClient {
     @POST
     @Path("/internal/prompts/rag/record-satisfied")
     Uni<PromptGatewayResource.RagRecordSatisfiedResponseDto> ragRecordSatisfied(PromptGatewayResource.RagRecordSatisfiedRequestDto dto);
+
+    @POST
+    @Path("/internal/prompts/cursor-response")
+    Uni<Void> cursorResponse(PromptGatewayResource.CursorResponseRequestDto dto);
 }

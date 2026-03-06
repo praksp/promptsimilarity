@@ -11,7 +11,7 @@ Distributed system for ingesting prompts, computing similarity (embeddings + vec
 - **Feature store**: Redis-backed (Feature Store Service).
 - **Java backend**: Quarkus microservices; **Gateway → Prompt Service via REST**; Prompt Service → Vector/Search/Notification/Collaboration/Graph/Feature-store via **gRPC**.
 - **Multi-user**: Share prompt context; similarity shown in dashboard (user, prompt text preview, score). Notifications logged when similarity is detected.
-- **Cursor plugin**: NPM/VS Code extension to send prompts to the local gateway.
+- **Cursor plugin**: VS Code extension to send prompts to the local gateway; **agent-mode integration** (hooks) to ingest every agent prompt and show **RAG token savings** in the IDE (status bar + sidebar). See [cursor-plugin/INTEGRATION.md](cursor-plugin/INTEGRATION.md).
 - **Teams/Slack**: Collaboration Service (create rooms from similar users); Graph Service for prompt/chat correlation (Neo4j-ready).
 - **Dashboard**: React (Vite) — submit prompts, view “Similarity with other users”, and “Find similar prompts” (search by text).
 
@@ -54,6 +54,8 @@ Scripts ensure Docker is running, then build images and start the stack. **After
 
 **Ports**: Gateway `8080`, Prompt Service (internal) `8082`, Embedding `8081`, Vector `9002`, Search `9003`, etc.
 
+**Persistence**: Redis (prompts, feature-store, graph) and Ollama models use Docker named volumes, so they survive `docker compose down` / restarts. Vector, search, and RAG caches are in-memory and reset on restart. See [docs/PERSISTENCE_AND_DATA.md](docs/PERSISTENCE_AND_DATA.md) and “Why Cursor prompts might not show in the dashboard” there.
+
 **Config (Docker)**:
 - Gateway: `QUARKUS_REST_CLIENT_PROMPT_SERVICE_URL=http://prompt-service:8080`
 - Prompt Service: `EMBEDDING_SERVICE_URL` → `embedding.service.url` (e.g. `http://embedding-service:8081`); gRPC client hosts/ports for vector, search, etc. set via env.
@@ -76,6 +78,13 @@ Open `http://localhost:5173` (or the port Vite prints). The app calls the API at
 4. After the second submit, “Similarity with other users” shows the other user(s), prompt text preview, and score. **Find similar prompts** (search box) also returns matches by text.
 
 Similarity threshold is 0.65 (65% cosine similarity); configurable in `PromptIngestionOrchestrator.SIMILARITY_THRESHOLD`.
+
+### 6. Cursor plugin (agent integration + token savings)
+
+1. Install the extension from the repo: open `cursor-plugin` in VS Code/Cursor, run the “Extension: Install Extension from Location” workflow, or build a VSIX with `npm run package` and install it.
+2. Ensure the Prompt Similarity gateway is running (e.g. `./scripts/clean-build-run.sh`).
+3. Command Palette → **“Enable Prompt Similarity integration (agent prompts → service)”** once per workspace. This configures Cursor hooks so each agent prompt is sent to the service.
+4. Use the **Prompt Similarity** sidebar view and status bar to see RAG impact (tokens saved, reuses) and “Last similar” for the latest agent prompt. See [cursor-plugin/INTEGRATION.md](cursor-plugin/INTEGRATION.md) for details.
 
 ### 5. Embedding service (real embeddings)
 

@@ -215,7 +215,22 @@ public class RagOrchestrator {
     }
 
     /**
+     * Store a Cursor agent response for a prompt so similar-responses can return it on repeat queries (RAG reuse).
+     */
+    public Uni<Void> storeCursorResponse(String promptId, String userId, String orgId, String responseText) {
+        if (promptId == null || promptId.isBlank() || responseText == null || responseText.isBlank()) {
+            return Uni.createFrom().voidItem();
+        }
+        responseStore.save(promptId, userId != null ? userId : "", orgId != null ? orgId : "default-org", responseText, 0);
+        return Uni.createFrom().voidItem();
+    }
+
+    /** Rough chars-per-token for estimating when tokensUsed was not recorded (e.g. cursor-response). */
+    private static final double CHARS_PER_TOKEN_ESTIMATE = 4.0;
+
+    /**
      * When user indicates satisfaction with a cached response, record tokens saved.
+     * If the stored response has tokensUsed == 0 (e.g. from Cursor plugin), estimate from response text length.
      */
     public Uni<Void> feedback(String responseId, boolean satisfied, String orgId) {
         if (!satisfied) {
@@ -223,7 +238,11 @@ public class RagOrchestrator {
         }
         StoredResponse r = responseStore.getByResponseId(responseId);
         if (r != null) {
-            tokensSavedStore.addSaved(r.tokensUsed(), orgId != null ? orgId : "default-org");
+            long tokensToRecord = r.tokensUsed();
+            if (tokensToRecord <= 0 && r.text() != null && !r.text().isBlank()) {
+                tokensToRecord = Math.max(1, (long) (r.text().length() / CHARS_PER_TOKEN_ESTIMATE));
+            }
+            tokensSavedStore.addSaved(tokensToRecord, orgId != null ? orgId : "default-org");
         }
         return Uni.createFrom().voidItem();
     }
@@ -233,11 +252,13 @@ public class RagOrchestrator {
      */
     public RagStats getStats(String orgId) {
         String safeOrg = orgId != null ? orgId : "default-org";
+        long promptCount = promptRepository != null ? promptRepository.getCount() : 0;
         return new RagStats(
                 tokensSavedStore.getTotalSaved(),
                 tokensSavedStore.getSavedThisMonth(),
                 tokensSavedStore.getSavedForOrg(safeOrg),
-                tokensSavedStore.getReuseCount());
+                tokensSavedStore.getReuseCount(),
+                promptCount);
     }
 
     public record RagAskResult(
@@ -250,7 +271,7 @@ public class RagOrchestrator {
             boolean askSatisfaction
     ) {}
 
-    public record RagStats(long tokensSavedTotal, long tokensSavedThisMonth, long tokensSavedOrg, long reuseCount) {}
+    public record RagStats(long tokensSavedTotal, long tokensSavedThisMonth, long tokensSavedOrg, long reuseCount, long promptCount) {}
 
     /** One similar prompt that has a stored LLM response (for UI to show and let user choose). */
     public record SimilarResponseMatch(String promptId, String responseId, String promptPreview, String responseText, double similarityScore, long tokensUsed) {}

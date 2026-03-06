@@ -85,6 +85,11 @@ public class PromptRepository {
         return Uni.createFrom().item(store.get(promptId));
     }
 
+    /** Total number of prompts (for plugin metric). */
+    public long getCount() {
+        return store.size();
+    }
+
     /** All prompts, newest first (from cache). */
     public Uni<List<PromptIngestionOrchestrator.PromptDto>> listAll() {
         List<PromptIngestionOrchestrator.PromptDto> list = store.values().stream()

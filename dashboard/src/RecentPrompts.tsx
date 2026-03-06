@@ -70,7 +70,7 @@ export const RecentPrompts: FC<Props> = ({ apiOnline, refreshTrigger }) => {
     <section className="recent-prompts-section">
       <h2 className="section-title">All prompts in the system</h2>
       <p className="recent-prompts-desc">
-        Every prompt entered is stored here (user, time, text). This confirms the backend is saving prompts.
+        Every prompt entered (from this dashboard or from Cursor with the plugin enabled) is stored here (user, time, text). Check the box below to load and refresh the list.
       </p>
       <div className="recent-prompts-toggle">
         <label>

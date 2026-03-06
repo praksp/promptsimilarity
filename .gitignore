@@ -17,6 +17,7 @@ __pycache__/
 .idea/
 *.iml
 .vscode/
+.cursor/
 *.swp
 *.swo
 
@@ -38,3 +39,6 @@ logs/
 
 # Dashboard
 dashboard/dist/
+
+# Extension build
+*.vsix

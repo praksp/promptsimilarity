@@ -3,20 +3,98 @@ package com.promptsimilarity.graphservice;
 import com.promptsimilarity.proto.graph.v1.*;
 import io.grpc.stub.StreamObserver;
 import io.quarkus.grpc.GrpcService;
-
+import io.quarkus.redis.datasource.RedisDataSource;
+import io.quarkus.redis.datasource.value.ValueCommands;
+import jakarta.enterprise.event.Observes;
 import jakarta.inject.Singleton;
+import io.quarkus.runtime.StartupEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.Base64;
 
 @GrpcService
 @Singleton
 public class GraphServiceGrpcImpl extends GraphServiceGrpc.GraphServiceImplBase {
 
-    private final Map<String, GraphNode> nodes = new HashMap<>();
-    private final List<GraphEdge> edges = new ArrayList<>();
+    private static final Logger LOG = LoggerFactory.getLogger(GraphServiceGrpcImpl.class);
+    private static final String REDIS_NODE_IDS = "graph:node:ids";
+    private static final String REDIS_NODE_PREFIX = "graph:node:";
+    private static final String REDIS_EDGE_COUNT = "graph:edge:count";
+    private static final String REDIS_EDGE_PREFIX = "graph:edge:";
+
+    private final Map<String, GraphNode> nodes = new ConcurrentHashMap<>();
+    private final List<GraphEdge> edges = Collections.synchronizedList(new ArrayList<>());
+    private final Object persistLock = new Object();
+    private final ValueCommands<String, String> redis;
+
+    public GraphServiceGrpcImpl(RedisDataSource ds) {
+        this.redis = ds.value(String.class);
+    }
+
+    /** Load persisted graph from Redis on startup. */
+    void onStart(@Observes StartupEvent event) {
+        try {
+            String idsStr = redis.get(REDIS_NODE_IDS);
+            if (idsStr != null && !idsStr.isBlank()) {
+                for (String id : idsStr.split(",")) {
+                    String key = REDIS_NODE_PREFIX + id.trim();
+                    if (key.equals(REDIS_NODE_PREFIX)) continue;
+                    String b64 = redis.get(key);
+                    if (b64 != null && !b64.isBlank()) {
+                        try {
+                            GraphNode n = GraphNode.parseFrom(Base64.getDecoder().decode(b64));
+                            nodes.put(n.getId(), n);
+                        } catch (Exception e) {
+                            LOG.warn("Failed to parse graph node {}: {}", id, e.getMessage());
+                        }
+                    }
+                }
+            }
+            String countStr = redis.get(REDIS_EDGE_COUNT);
+            if (countStr != null && !countStr.isBlank()) {
+                int count = Integer.parseInt(countStr.trim());
+                for (int i = 0; i < count; i++) {
+                    String b64 = redis.get(REDIS_EDGE_PREFIX + i);
+                    if (b64 != null && !b64.isBlank()) {
+                        try {
+                            edges.add(GraphEdge.parseFrom(Base64.getDecoder().decode(b64)));
+                        } catch (Exception e) {
+                            LOG.warn("Failed to parse graph edge {}: {}", i, e.getMessage());
+                        }
+                    }
+                }
+            }
+            LOG.info("Loaded {} nodes and {} edges from Redis", nodes.size(), edges.size());
+        } catch (Exception e) {
+            LOG.warn("Could not load graph from Redis (starting empty): {}", e.getMessage());
+        }
+    }
+
+    private void persist() {
+        synchronized (persistLock) {
+            try {
+                if (!nodes.isEmpty()) {
+                    redis.set(REDIS_NODE_IDS, String.join(",", nodes.keySet()));
+                    for (Map.Entry<String, GraphNode> e : nodes.entrySet()) {
+                        redis.set(REDIS_NODE_PREFIX + e.getKey(), Base64.getEncoder().encodeToString(e.getValue().toByteArray()));
+                    }
+                }
+                redis.set(REDIS_EDGE_COUNT, String.valueOf(edges.size()));
+                for (int i = 0; i < edges.size(); i++) {
+                    redis.set(REDIS_EDGE_PREFIX + i, Base64.getEncoder().encodeToString(edges.get(i).toByteArray()));
+                }
+            } catch (Exception e) {
+                LOG.warn("Failed to persist graph to Redis: {}", e.getMessage());
+            }
+        }
+    }
 
     private static String userNodeId(String userId) {
         return "user:" + userId;
@@ -101,6 +179,7 @@ public class GraphServiceGrpcImpl extends GraphServiceGrpc.GraphServiceImplBase 
         GraphEdge authored = newEdge(userNodeId, promptNodeId, "AUTHORED", Collections.emptyMap());
         edges.add(authored);
 
+        persist();
         responseObserver.onNext(RecordPromptResponse.newBuilder().setSuccess(true).build());
         responseObserver.onCompleted();
     }
@@ -125,6 +204,7 @@ public class GraphServiceGrpcImpl extends GraphServiceGrpc.GraphServiceImplBase 
         edges.add(newEdge(p1NodeId, p2NodeId, "SIMILAR_TO", props));
         edges.add(newEdge(p2NodeId, p1NodeId, "SIMILAR_TO", props));
 
+        persist();
         responseObserver.onNext(RecordSimilarityResponse.newBuilder().setSuccess(true).build());
         responseObserver.onCompleted();
     }
@@ -148,6 +228,7 @@ public class GraphServiceGrpcImpl extends GraphServiceGrpc.GraphServiceImplBase 
         if (tokensUsed > 0) props.put("tokens_used", Long.toString(tokensUsed));
         edges.add(newEdge(promptNodeId, responseNodeId, "GENERATED", props));
 
+        persist();
         responseObserver.onNext(RecordResponseResponse.newBuilder().setSuccess(true).build());
         responseObserver.onCompleted();
     }

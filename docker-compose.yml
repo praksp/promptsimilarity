@@ -1,10 +1,18 @@
 version: "3.8"
 
+# Named volumes so data survives container restarts.
+# ollama-models: required for Ollama; all models (e.g. llama2) live here in Docker.
+volumes:
+  redis-data:
+  ollama-models:
+
 services:
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    volumes:
+      - redis-data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -15,7 +23,9 @@ services:
     image: ollama/ollama:latest
     ports:
       - "11434:11434"
-    # Optional: volumes to persist models. Image has no curl; script waits for :11434 from host.
+    volumes:
+      # All models (llama2, etc.) are stored in this volume; always use it so models persist and stay in Docker.
+      - ollama-models:/root/.ollama
 
   embedding-service:
     build:
@@ -71,18 +81,26 @@ services:
       QUARKUS_GRPC_CLIENTS_GRAPH_PORT: "9006"
       QUARKUS_GRPC_CLIENTS_FEATURESTORE_HOST: feature-store-service
       QUARKUS_GRPC_CLIENTS_FEATURESTORE_PORT: "9007"
-    # Start after backends are created; do not wait for healthy (JVM startup varies; orchestrator is resilient)
+    # Start after backends are up; wait for healthy where available
     depends_on:
       redis:
         condition: service_healthy
-      vector-service: {}
-      search-service: {}
-      notification-service: {}
-      collaboration-service: {}
-      graph-service: {}
-      feature-store-service: {}
-      embedding-service: {}
-      ollama: {}
+      embedding-service:
+        condition: service_healthy
+      vector-service:
+        condition: service_healthy
+      search-service:
+        condition: service_healthy
+      notification-service:
+        condition: service_healthy
+      collaboration-service:
+        condition: service_healthy
+      graph-service:
+        condition: service_healthy
+      feature-store-service:
+        condition: service_healthy
+      ollama:
+        condition: service_started
 
   vector-service:
     build:
@@ -142,6 +160,11 @@ services:
       dockerfile: docker/Dockerfile.graph-service
     ports:
       - "9006:9006"
+    environment:
+      QUARKUS_REDIS_HOSTS: redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "9006"]
       interval: 10s

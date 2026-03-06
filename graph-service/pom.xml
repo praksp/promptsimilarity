@@ -24,6 +24,10 @@
             <artifactId>quarkus-grpc</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-redis-client</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkiverse.neo4j</groupId>
             <artifactId>quarkus-neo4j</artifactId>
         </dependency>

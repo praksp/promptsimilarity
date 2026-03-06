@@ -111,13 +111,12 @@ if docker info &>/dev/null; then
   echo ""
   echo "Services:"
   echo "  Gateway:    http://localhost:8080"
-  echo "  Dashboard:  http://localhost:3000 (run: cd dashboard && npm run dev)"
+  echo "  Dashboard:  http://localhost:3000 (starting in background)"
   echo "  Embedding:  http://localhost:8081"
   echo "  Ollama:     http://localhost:11434 (RAG/LLM)"
-  echo "              Pull a model: docker compose exec ollama ollama pull llama2"
   echo ""
   echo "  docker compose logs -f              # follow logs"
-  echo "  docker compose logs -f ollama       # Ollama logs"
+  echo "  docker compose logs -f ollama        # Ollama logs"
   echo ""
 
   # Wait for Ollama to be reachable (required for LLM; prompt-service uses http://ollama:11434)
@@ -134,10 +133,30 @@ if docker info &>/dev/null; then
       echo "  waiting for Ollama ($n/45)..."
       sleep 2
     done
-    if [ $n -ge 45 ]; then
-      echo "  Ollama not responding after 90s. Pull a model in the container: docker compose exec ollama ollama pull llama2"
+    if [ $n -lt 45 ]; then
+      # One-time: pull llama2 only if not already present (persists in volume)
+      if ! docker compose exec -T ollama ollama list 2>/dev/null | grep -qE '\bllama2\b'; then
+        echo "Pulling llama2 (one-time; persists in volume)..."
+        docker compose exec ollama ollama pull llama2
+        echo "llama2 ready."
+      else
+        echo "llama2 already present (skipping pull)."
+      fi
+    else
+      echo "  Ollama not responding after 90s. Start Ollama or check: docker compose logs ollama"
     fi
   fi
+
+  # Start dashboard in background (dev server at :3000)
+  if ! curl -s -o /dev/null -w "%{http_code}" --connect-timeout 1 http://localhost:3000 2>/dev/null | grep -q 200; then
+    echo "Starting dashboard at http://localhost:3000..."
+    (cd "$ROOT/dashboard" && npm run dev) &
+    sleep 3
+    echo "Dashboard started (or starting). Open http://localhost:3000"
+  else
+    echo "Dashboard already running at http://localhost:3000"
+  fi
+  echo ""
 
   # Smoke test (--test)
   if [ "$RUN_TEST" = true ] && command -v curl &>/dev/null; then

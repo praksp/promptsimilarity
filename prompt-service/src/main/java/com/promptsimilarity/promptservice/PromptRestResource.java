@@ -143,7 +143,7 @@ public class PromptRestResource {
     @Path("/rag/stats")
     public RagStatsDto ragStats(@QueryParam("orgId") String orgId) {
         RagOrchestrator.RagStats s = ragOrchestrator.getStats(orgId);
-        return new RagStatsDto(s.tokensSavedTotal(), s.tokensSavedThisMonth(), s.tokensSavedOrg(), s.reuseCount());
+        return new RagStatsDto(s.tokensSavedTotal(), s.tokensSavedThisMonth(), s.tokensSavedOrg(), s.reuseCount(), s.promptCount());
     }
 
     @POST
@@ -183,6 +183,19 @@ public class PromptRestResource {
                 .onFailure().recoverWithItem(e -> new RagAskResponseDto(
                         "Request failed: " + (e != null && e.getMessage() != null ? e.getMessage() : (e != null ? e.getClass().getSimpleName() : "Unknown")),
                         null, null, 0, 0, false, false));
+    }
+
+    @POST
+    @Path("/cursor-response")
+    public Uni<Void> cursorResponse(CursorResponseRequestDto dto) {
+        String promptId = dto.promptId != null ? dto.promptId.trim() : null;
+        String responseText = dto.responseText != null ? dto.responseText.trim() : null;
+        String userId = dto.userId != null ? dto.userId : "";
+        String orgId = dto.orgId != null ? dto.orgId : "default-org";
+        if (promptId != null && !promptId.isEmpty() && responseText != null && !responseText.isEmpty()) {
+            return ragOrchestrator.storeCursorResponse(promptId, userId, orgId, responseText);
+        }
+        return Uni.createFrom().voidItem();
     }
 
     @POST
@@ -237,14 +250,16 @@ public class PromptRestResource {
         public long tokensSavedThisMonth;
         public long tokensSavedOrg;
         public long reuseCount;
+        public long promptCount;
 
         public RagStatsDto() {}
 
-        public RagStatsDto(long tokensSavedTotal, long tokensSavedThisMonth, long tokensSavedOrg, long reuseCount) {
+        public RagStatsDto(long tokensSavedTotal, long tokensSavedThisMonth, long tokensSavedOrg, long reuseCount, long promptCount) {
             this.tokensSavedTotal = tokensSavedTotal;
             this.tokensSavedThisMonth = tokensSavedThisMonth;
             this.tokensSavedOrg = tokensSavedOrg;
             this.reuseCount = reuseCount;
+            this.promptCount = promptCount;
         }
     }
 
@@ -284,6 +299,17 @@ public class PromptRestResource {
     public static final class SimilarMatchDto {
         public String promptId;
         public double score;
+    }
+
+    public static final class CursorResponseRequestDto {
+        public String userId;
+        public String orgId;
+        public String conversationId;
+        public String generationId;
+        public String prompt;
+        public String responseText;
+        /** When set, the backend stores this response for the given promptId so RAG similar-responses can return it. */
+        public String promptId;
     }
 
     public static final class RagRecordSatisfiedRequestDto {

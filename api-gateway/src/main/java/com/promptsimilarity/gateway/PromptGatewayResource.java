@@ -99,6 +99,12 @@ public class PromptGatewayResource {
         return promptClient.ragRecordSatisfied(dto);
     }
 
+    @POST
+    @Path("/cursor-response")
+    public Uni<Void> cursorResponse(CursorResponseRequestDto dto) {
+        return promptClient.cursorResponse(dto);
+    }
+
     public record IngestRequestDto(String userId, String orgId, String text, String language) {}
     public record IngestResponseDto(String promptId, boolean similarityDetected, List<SimilarUserDto> similarUsers) {}
     public record SimilarUserDto(String userId, String promptId, double similarityScore, String textPreview) {}
@@ -109,7 +115,7 @@ public class PromptGatewayResource {
     public record RagAskResponseDto(String responseText, String responseId, String promptId, long tokensUsed,
                                     double similarityScore, boolean fromCache, boolean askSatisfaction) {}
     public record RagFeedbackRequestDto(String responseId, boolean satisfied, String orgId) {}
-    public record RagStatsDto(long tokensSavedTotal, long tokensSavedThisMonth, long tokensSavedOrg, long reuseCount) {}
+    public record RagStatsDto(long tokensSavedTotal, long tokensSavedThisMonth, long tokensSavedOrg, long reuseCount, long promptCount) {}
 
     public record RagSimilarResponsesRequestDto(String prompt, String userId, String orgId) {}
     public record SimilarResponseMatchDto(String promptId, String responseId, String promptPreview, String responseText, double similarityScore, long tokensUsed) {}
@@ -117,4 +123,5 @@ public class PromptGatewayResource {
     public record SimilarMatchDto(String promptId, double score) {}
     public record RagRecordSatisfiedRequestDto(String promptText, String userId, String orgId, String similarToPromptId, double similarityScore) {}
     public record RagRecordSatisfiedResponseDto(String promptId) {}
+    public record CursorResponseRequestDto(String userId, String orgId, String conversationId, String generationId, String prompt, String responseText, String promptId) {}
 }
