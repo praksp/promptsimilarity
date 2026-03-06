@@ -1,19 +1,25 @@
-/* Professional light theme: clean, readable, accent for actions */
+/* Dark theme: FirstInnings Technology Limited */
 :root {
-  --bg: #f8fafc;
-  --surface: #ffffff;
-  --border: #e2e8f0;
-  --text: #1e293b;
-  --muted: #64748b;
-  --accent: #0ea5e9;
-  --accent-dim: #0284c7;
-  --success: #059669;
-  --success-bg: #d1fae5;
-  --warning: #d97706;
-  --error: #dc2626;
-  --error-bg: #fee2e2;
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --surface-elevated: #334155;
+  --border: #334155;
+  --text: #f1f5f9;
+  --muted: #94a3b8;
+  --accent: #38bdf8;
+  --accent-dim: #0ea5e9;
+  --success: #34d399;
+  --success-bg: #064e3b;
+  --warning: #fbbf24;
+  --error: #f87171;
+  --error-bg: #7f1d1d;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --insights-bg: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  /* Graph edge colors by similarity: far=orange, mid=yellow, close=green */
+  --edge-far: #fb923c;
+  --edge-mid: #facc15;
+  --edge-close: #22c55e;
 }
 * { box-sizing: border-box; }
 body {

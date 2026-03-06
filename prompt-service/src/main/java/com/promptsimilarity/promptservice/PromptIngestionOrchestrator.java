@@ -15,7 +15,7 @@ import java.util.Objects;
 @ApplicationScoped
 public class PromptIngestionOrchestrator {
 
-    private static final double SIMILARITY_THRESHOLD = 0.65;
+    private static final double SIMILARITY_THRESHOLD = 0.5;
 
     @jakarta.inject.Inject
     EmbeddingClient embeddingClient;

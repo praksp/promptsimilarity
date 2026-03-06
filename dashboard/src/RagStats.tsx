@@ -41,7 +41,7 @@ export function RagStats({ apiOnline, refreshTrigger }: Props) {
 
   return (
     <div className="rag-stats">
-      <div className="rag-stats-title">RAG impact</div>
+      <div className="rag-stats-title">RAG Insights</div>
       <div className="rag-stats-grid">
         <div className="rag-stat-item">
           <span className="rag-stat-value">{promptCount.toLocaleString()}</span>

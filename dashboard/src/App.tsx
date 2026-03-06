@@ -33,69 +33,73 @@ export default function App() {
 
   return (
     <div className="app-container">
-      <header className="app-header">
-        <h1>Prompt Similarity</h1>
-        <p>
-          Enter your prompt. We find similar questions and their LLM answers first. If one satisfies you, we count it as RAG impact (tokens saved). Otherwise we call the LLM and store the result.
-        </p>
+      <header className="app-banner">
+        <span className="app-banner-label">FirstInnings Technology Limited</span>
       </header>
 
       {apiOnline === false && (
-        <div className="backend-offline">
-          <strong>Backend not reachable</strong>
-          <p>
-            Start the stack with <code>./scripts/clean-build-run.sh</code> or <code>docker compose up -d</code>.
-            The API gateway must be running at <code>http://localhost:8080</code>. If the dashboard is not
-            run with <code>npm run dev</code>, set <code>VITE_API_BASE_URL=http://localhost:8080</code> before building.
-          </p>
+        <div className="app-section">
+          <div className="backend-offline">
+            <strong>Backend not reachable</strong>
+            <p>
+              Start the stack with <code>./scripts/clean-build-run.sh</code> or <code>docker compose up -d</code>.
+              The API gateway must be running at <code>http://localhost:8080</code>. If the dashboard is not
+              run with <code>npm run dev</code>, set <code>VITE_API_BASE_URL=http://localhost:8080</code> before building.
+            </p>
+          </div>
         </div>
       )}
 
-      <div className="advanced-mode-row">
-        <label className="advanced-mode-toggle">
-          <input
-            type="checkbox"
-            checked={advancedMode}
-            onChange={(e) => setAdvancedMode(e.target.checked)}
-          />
-          <span>Advanced: show similarity between prompts and users</span>
-        </label>
-      </div>
+      <section className="app-section app-section-rag">
+        <RagStats apiOnline={apiOnline} refreshTrigger={String(ragStatsTrigger)} />
+      </section>
 
-      <UnifiedPromptFlow
-        userId={userId}
-        apiOnline={apiOnline}
-        onRagImpact={() => setRagStatsTrigger((t: number) => t + 1)}
-        onIngestResult={(data) => {
-          setLastPromptId(data.promptId);
-          setSimilarUsers(
-            (data.similarUsers ?? []).map((u) => ({
-              userId: u.userId,
-              promptId: u.promptId,
-              similarityScore: u.similarityScore,
-              textPreview: u.textPreview,
-            }))
-          );
-        }}
-      />
-
-      <RagStats apiOnline={apiOnline} refreshTrigger={String(ragStatsTrigger)} />
-
-      <div className="main-layout">
-        <div className="main-column main-left">
-          <FindSimilarPanel apiOnline={apiOnline} />
-        </div>
-        <div className="main-column main-right">
-          {advancedMode && (
-            <SimilarityView
-              currentUserId={userId}
-              currentPromptId={lastPromptId}
-              similarUsers={similarUsers}
+      <section className="app-section app-section-prompt">
+        <div className="advanced-mode-row">
+          <label className="advanced-mode-toggle">
+            <input
+              type="checkbox"
+              checked={advancedMode}
+              onChange={(e) => setAdvancedMode(e.target.checked)}
             />
-          )}
-          <RecentPrompts apiOnline={apiOnline} refreshTrigger={String(ragStatsTrigger)} />
+            <span>Advanced: show similarity between prompts and users</span>
+          </label>
         </div>
-      </div>
+        <UnifiedPromptFlow
+          userId={userId}
+          apiOnline={apiOnline}
+          onRagImpact={() => setRagStatsTrigger((t: number) => t + 1)}
+          onIngestResult={(data) => {
+            setLastPromptId(data.promptId);
+            setSimilarUsers(
+              (data.similarUsers ?? []).map((u) => ({
+                userId: u.userId,
+                promptId: u.promptId,
+                similarityScore: u.similarityScore,
+                textPreview: u.textPreview,
+              }))
+            );
+          }}
+        />
+      </section>
+
+      {advancedMode && (
+        <section className="app-section app-section-similarity">
+          <SimilarityView
+            currentUserId={userId}
+            currentPromptId={lastPromptId}
+            similarUsers={similarUsers}
+          />
+        </section>
+      )}
+
+      <section className="app-section app-section-prompts">
+        <RecentPrompts apiOnline={apiOnline} refreshTrigger={String(ragStatsTrigger)} />
+      </section>
+
+      <section className="app-section app-section-find-similar">
+        <FindSimilarPanel apiOnline={apiOnline} />
+      </section>
     </div>
   );
 }

@@ -262,6 +262,33 @@ This document captures the key technical mistakes, corrective changes, and forwa
 
 ---
 
+### 10. Plugin, Dashboard, and UI Iterations
+
+**What went wrong**
+
+- Cursor plugin hooks did not run because `.cursor/prompt-similarity.json` and `.cursor/hooks.json` were empty or missing; users saw no ingest/similar-responses and assumed the plugin was broken.
+- Tokens-saved and reuse metrics were not updated when reusing a cached response (dashboard “Use this” or plugin short-circuit) when the stored response had `tokensUsed = 0` (e.g. from `cursor-response`).
+- Dashboard and plugin showed different metrics or stale numbers because the dashboard did not poll RAG stats and each client could point at different gateways or orgs.
+- UI changes (layout, theme, graph) were done in large sweeps; form-like top-to-bottom layout required heavy scrolling and the similarity graph showed “user as node, prompt as edge,” which was harder to read than “prompt + user as nodes, edge = similar prompt.”
+- Banner and section backgrounds used a different variable (`--banner-bg`) that did not match the rest of the dark theme.
+
+**Fixes**
+
+- **Config and hooks**: Documented that both `.cursor/prompt-similarity.json` (gatewayUrl, userId, orgId) and `.cursor/hooks.json` (beforeSubmitPrompt, stop, afterAgentResponse) must contain valid JSON. Extension “Enable Prompt Similarity integration” writes both; if files exist but are size 0, overwrite them by re-running the command or populating manually. Added `.cursor/` to `.gitignore` so machine-specific hook paths are not committed.
+- **Tokens saved on reuse**: When recording feedback for a cached response, if `tokensUsed <= 0`, the backend now estimates tokens from response text length (e.g. chars/4) so “tokens saved” and “this month” increment instead of staying zero.
+- **Dashboard–plugin consistency**: Same gateway URL and orgId for both; dashboard polls `GET /rag/stats` every 30s so plugin-driven reuses show up. Documented in `DASHBOARD_PLUGIN_CONSISTENCY.md`.
+- **Full-viewport layout**: Replaced long form layout with a single 100vh canvas: CSS Grid with banner (fixed), then main grid (RAG full width, prompt full width, similarity + prompts in two columns, find-similar full width). Sections use `min-height: 0` and `overflow: auto` so content scrolls inside cells and the whole app fits in one view.
+- **Similarity graph**: Switched to **nodes = prompts and users**; **edges = “similar prompt”** between a prompt node and a user node. Edge length encodes similarity (higher score = shorter). Edge color: green (high), yellow (mid), orange (low). Center shows “Your prompt” and current user; similar users and their prompts arranged around with colored edges.
+- **Banner**: Use `var(--surface)` for the banner background so it matches the rest of the page; removed a separate `--banner-bg` that looked out of place.
+
+**Future guidance**
+
+- For any “integration” that depends on local config files, validate that files exist and are non-empty and that the runner (e.g. Cursor) invokes the hook with the expected workspace roots. Provide a one-command or one-click “Enable” that writes both structure and content.
+- When two UIs (dashboard and plugin) display the same backend metrics, use one source of truth (same API, same org) and refresh the dashboard periodically so plugin actions are visible without a manual reload.
+- Design graph visualizations so node/edge semantics match user mental models (e.g. “prompt and user as nodes” with “similar prompt” as the relationship and visual encoding for strength).
+
+---
+
 These learnings apply across languages and frameworks. The core themes are:
 
 - Decide and document protocols and boundaries early.

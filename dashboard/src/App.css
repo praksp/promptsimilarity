@@ -1,28 +1,37 @@
-/* Layout */
+/* Layout: scrollable page, no viewport lock */
 .app-container {
-  padding: 2rem;
+  padding: 0;
   max-width: 1120px;
   margin: 0 auto;
   min-height: 100vh;
 }
 
-.app-header {
-  margin-bottom: 2rem;
+.app-banner {
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
-  padding-bottom: 1rem;
+  padding: 0.5rem 1.25rem;
 }
-
-.app-header h1 {
-  margin: 0;
-  font-size: 1.6rem;
-  color: var(--accent);
+.app-banner-label {
+  font-size: 1rem;
   font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text);
 }
 
-.app-header p {
-  margin: 0.35rem 0 0;
-  color: var(--muted);
-  font-size: 0.95rem;
+.app-section {
+  padding: 1.25rem 2rem;
+}
+.app-section-rag {
+  padding-top: 1.5rem;
+  padding-bottom: 0.5rem;
+}
+.app-section-prompt {
+  padding-top: 0.75rem;
+}
+.app-section-similarity,
+.app-section-prompts,
+.app-section-find-similar {
+  border-top: 1px solid var(--border);
 }
 
 /* Main layout */
@@ -208,91 +217,64 @@
   border-radius: 4px;
 }
 
-/* Similarity graph (center + nodes) */
+/* Similarity graph: nodes = prompt + user, edges = similar prompt (green/yellow/orange by score) */
 .similarity-graph {
   position: relative;
-  min-height: 240px;
+  min-height: 200px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
-
+.similarity-graph-new {
+  min-height: 280px;
+}
 .similarity-graph-svg {
-  position: absolute;
-  inset: 0;
   width: 100%;
-  height: 100%;
+  height: auto;
+  max-height: 320px;
 }
 
-.graph-center-node {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  z-index: 2;
-  box-shadow: 0 0 0 4px var(--surface);
-}
-
-.graph-label {
-  font-weight: 600;
-}
-
-.graph-outer-node-wrapper {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  z-index: 1;
-}
-
-.graph-outer-node {
-  padding: 0.5rem 0.6rem;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  text-align: center;
-  min-width: 90px;
-  font-size: 0.8rem;
-  white-space: nowrap;
-}
-
-.graph-score {
-  display: block;
-  color: var(--accent);
-  font-weight: 600;
-  margin-bottom: 0.2rem;
-}
-
-.graph-user {
-  display: block;
-  color: var(--text);
-}
-
-.graph-prompt-id {
-  display: block;
-  color: var(--muted);
-  font-size: 0.7rem;
-  margin-top: 0.2rem;
-}
-
-.graph-edge-line {
+.graph-node {
+  fill: var(--surface-elevated);
   stroke: var(--border);
   stroke-width: 1.5;
 }
+.graph-node-prompt {
+  fill: var(--surface-elevated);
+  stroke: var(--accent);
+}
+.graph-node-user {
+  fill: var(--surface-elevated);
+  stroke: var(--success);
+}
+.graph-node-center {
+  stroke-width: 2;
+}
+.graph-node-label {
+  fill: var(--text);
+  font-size: 10px;
+  font-family: inherit;
+  pointer-events: none;
+}
+.graph-node-label-center {
+  font-size: 9px;
+  font-weight: 600;
+}
 
+.graph-edge-line {
+  stroke-width: 2;
+}
+.graph-edge-similar {
+  stroke-linecap: round;
+}
+.graph-edge-you {
+  stroke: var(--muted);
+}
 .graph-edge-label {
   fill: var(--muted);
-  font-size: 0.7rem;
+  font-size: 8px;
+  font-family: inherit;
 }
 
 /* Similarity list */
@@ -478,12 +460,12 @@
 /* Backend offline */
 .backend-offline {
   background: var(--error-bg);
-  border: 1px solid rgba(220, 38, 38, 0.3);
-  border-radius: 8px;
-  padding: 1rem;
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
   color: var(--error);
   font-size: 0.9rem;
-  margin-bottom: 1.5rem;
+  margin: 0;
 }
 
 .backend-offline strong {
@@ -688,14 +670,78 @@
   color: var(--muted);
 }
 
-/* RAG stats */
+/* RAG impact – insights dashboard style */
 .rag-stats {
-  background: var(--surface);
+  background: var(--insights-bg);
   border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.5rem 1.75rem;
+  margin-bottom: 0;
+  box-shadow: var(--shadow-md);
+  position: relative;
+  overflow: hidden;
+}
+.rag-stats::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-dim));
+  opacity: 0.9;
+}
+.rag-stats-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.rag-stats-title::before {
+  content: '▸';
+  color: var(--accent);
+}
+.rag-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+}
+@media (max-width: 640px) {
+  .rag-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.rag-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  background: rgba(255, 255, 255, 0.04);
   border-radius: 12px;
-  padding: 1rem 1.25rem;
-  margin-bottom: 1.5rem;
-  box-shadow: var(--shadow);
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: border-color 0.2s, background 0.2s;
+}
+.rag-stat-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.rag-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.rag-stat-label {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 /* Unified prompt flow (one input → similar first → use or get from LLM) */
@@ -825,34 +871,3 @@
   height: 1rem;
 }
 
-.rag-stats-title {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.75rem;
-}
-
-.rag-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 1rem;
-}
-
-.rag-stat-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-.rag-stat-value {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--accent);
-}
-
-.rag-stat-label {
-  font-size: 0.8rem;
-  color: var(--muted);
-}

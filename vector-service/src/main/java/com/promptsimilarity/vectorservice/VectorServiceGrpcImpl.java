@@ -46,6 +46,7 @@ public class VectorServiceGrpcImpl extends VectorServiceGrpc.VectorServiceImplBa
         List<Float> query = request.getEmbeddingList().stream().toList();
         String orgId = request.getOrgId();
         String excludeUser = request.hasExcludeUserId() ? request.getExcludeUserId() : null;
+        boolean excludeCurrentUser = excludeUser != null && !excludeUser.isBlank();
         int topK = request.getTopK() > 0 ? request.getTopK() : 10;
         double minScore = request.getMinScore();
 
@@ -53,7 +54,7 @@ public class VectorServiceGrpcImpl extends VectorServiceGrpc.VectorServiceImplBa
         System.out.println("Total prompts in DB: " + prompts.size());
 
         List<VectorMatch> matches = prompts.values().stream()
-                .filter(p -> p.orgId.equals(orgId) && !p.userId.equals(excludeUser))
+                .filter(p -> p.orgId.equals(orgId) && (!excludeCurrentUser || !p.userId.equals(excludeUser)))
                 .map(p -> {
                     double score = cosineSimilarity(query, p.embedding);
                     System.out.println("Compared with prompt: " + p.promptId + ", user: " + p.userId + ", score: " + score);

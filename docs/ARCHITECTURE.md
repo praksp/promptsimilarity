@@ -2,47 +2,48 @@
 
 ## Overview
 
-Distributed system for ingesting prompts, computing similarity (embeddings + vector store), storing reasoning in a vector store, and connecting users working on similar topics via notifications and Teams/Slack. Designed for high throughput and low latency.
+Distributed system for ingesting prompts, computing similarity (embeddings + vector store), RAG (cached responses, tokens saved), and connecting users working on similar topics via notifications and graph visualization. Dashboard and Cursor plugin share the same backend and metrics.
 
 ## High-Level Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                     DASHBOARD (React/Vite) + CURSOR PLUGIN (NPM)                 │
-│  - Submit prompts, view similarity, find similar (search)                         │
-│  - Calls API Gateway via REST (HTTP/JSON)                                        │
+│            DASHBOARD (React/Vite, dark theme) + CURSOR PLUGIN (VS Code)           │
+│  - RAG Insights, prompt entry, similarity graph (prompt+user nodes, edges=score)  │
+│  - Plugin: hooks (beforeSubmitPrompt, stop, afterAgentResponse), Live Similar    │
+│  - Same gateway URL & orgId → same promptCount, tokens saved, reuses             │
 └─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
+                                        │ REST (HTTP/JSON)
                                         ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │                         API GATEWAY (REST only, port 8080)                       │
-│  - Single entry; forwards to Prompt Service via HTTP (RestClient)                │
-│  - CORS, health at /q/health                                                     │
+│  - /api/v1/prompts: ingest, list, similar, live-similar, rag/stats,              │
+│    rag/similar-responses, rag/feedback, rag/record-satisfied, cursor-response    │
 └─────────────────────────────────────────────────────────────────────────────────┘
-                                        │ HTTP (JSON)
+                                        │ HTTP (RestClient)
                                         ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                    PROMPT SERVICE (REST internal, port 8080)                    │
-│  - Ingest: embed → store (vector, search, feature, graph) → similarity check    │
-│  - Find similar: embed → vector search                                           │
-│  - Downstream failures are best-effort (recover with empty/skip); ingest still 200│
+│                    PROMPT SERVICE (REST internal, port 8080)                     │
+│  - Ingest: embed → store (vector, search, feature, graph, Redis prompt repo)    │
+│  - RAG: similar-responses, storeCursorResponse, feedback, record-satisfied       │
+│  - Downstream failures best-effort; ingest still 200                             │
 └─────────────────────────────────────────────────────────────────────────────────┘
           │                │                │                │                │
           │ gRPC           │ gRPC           │ gRPC           │ gRPC           │ gRPC
           ▼                ▼                ▼                ▼                ▼
 ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-│   VECTOR     │  │   SEARCH     │  │   FEATURE    │  │ NOTIFICATION │  │  COLLAB      │
-│   SERVICE    │  │   SERVICE    │  │   STORE      │  │   SERVICE    │  │  + GRAPH     │
-│  (in-memory  │  │ (Elastic)    │  │   (Redis)    │  │ (alerts log) │  │  SERVICE     │
-│   dev)       │  │              │  │              │  │              │  │              │
+│   VECTOR     │  │   SEARCH     │  │   FEATURE   │  │ NOTIFICATION │  │  GRAPH      │
+│   SERVICE    │  │   SERVICE    │  │   STORE     │  │   SERVICE    │  │  SERVICE    │
+│  (in-memory  │  │ (in-memory   │  │   (Redis)   │  │ (alerts log) │  │  (Redis)    │
+│   dev)       │  │   dev)       │  │             │  │              │  │  persisted  │
 └──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘
           │
           │  Embeddings via HTTP
           ▼
-┌──────────────┐
-│  EMBEDDING   │  Python FastAPI; sentence-transformers (all-MiniLM-L6-v2)
-│  SERVICE     │  POST /embed { "text": "..." } → { "embedding": [...] }
-└──────────────┘
+┌──────────────┐  ┌──────────────┐
+│  EMBEDDING   │  │   OLLAMA     │  RAG LLM (optional); models in Docker volume
+│  SERVICE     │  │  (port 11434)│
+└──────────────┘  └──────────────┘
 ```
 
 ## Components
@@ -89,8 +90,9 @@ Distributed system for ingesting prompts, computing similarity (embeddings + vec
 - **gRPC**: CreateRoomFromSimilarity. Best-effort from Prompt Service.
 
 ### 9. Graph Service
-- **Role**: Model prompts, users, chats, rooms; correlate chats to prompts (Neo4j-ready).
-- **gRPC**: RecordPrompt. Best-effort from Prompt Service.
+- **Role**: Model prompts, users, responses; persist to Redis so graph survives restarts.
+- **gRPC**: RecordPrompt, RecordSimilarity, RecordResponse. Best-effort from Prompt Service.
+- **Dashboard**: Similarity view shows nodes = prompts + users; edges = "similar prompt" with length/color by similarity (green=high, yellow=mid, orange=low).
 
 ## Data Flow
 
@@ -124,7 +126,7 @@ Distributed system for ingesting prompts, computing similarity (embeddings + vec
 
 - **Seeing similar prompts**: Use different user IDs (e.g. alice, bob), enter same or similar text, submit. Vector service must be running so prompts are stored and search returns results.
 - **Threshold**: Default 0.65 (65% cosine similarity). Configurable in `PromptIngestionOrchestrator.SIMILARITY_THRESHOLD`.
-- **Response**: Ingest returns `similarUsers[]` with `userId`, `promptId`, `similarityScore`, `textPreview`. Dashboard shows these in “Similarity with other users” and in Find similar (search) results.
+- **Response**: Ingest returns `similarUsers[]` with `userId`, `promptId`, `similarityScore`, `textPreview`. Dashboard graph: nodes = prompts and users; edges = "similar prompt" (length/color by score). Dashboard shows these in “Similarity with other users”.
 
 ## Security & Multi-Tenancy
 
